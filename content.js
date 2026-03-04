@@ -131,10 +131,19 @@
   let mediaRecorder = null, recordedChunks = [], recordingStream = null;
   let dragOffset = { x: 0, y: 0 };
 
+  const BTN = 48;
+
+  function clamp(right, bottom) {
+    return {
+      right: Math.min(Math.max(0, right), window.innerWidth - BTN),
+      bottom: Math.min(Math.max(0, bottom), window.innerHeight - BTN)
+    };
+  }
+
   /* ── Create Shadow DOM host ── */
   const host = document.createElement('div');
   host.id = 'snap-tools-host';
-  const pos = loadPos();
+  const pos = clamp(loadPos().right, loadPos().bottom);
   host.style.cssText = `position:fixed!important;z-index:2147483647!important;bottom:${pos.bottom}px;right:${pos.right}px;pointer-events:none!important;display:block!important;`;
 
   const shadow = host.attachShadow({ mode: 'open' });
@@ -249,11 +258,13 @@
     const onMove = (ev) => {
       if (Math.hypot(ev.clientX - dragStart.x, ev.clientY - dragStart.y) > 5) {
         isDragging = true;
-        const w = host.offsetWidth, h = host.offsetHeight;
-        const r = Math.min(Math.max(0, window.innerWidth - ev.clientX - (w - dragOffset.x)), window.innerWidth - w);
-        const b = Math.min(Math.max(0, window.innerHeight - ev.clientY - (h - dragOffset.y)), window.innerHeight - h);
-        host.style.right = r + 'px';
-        host.style.bottom = b + 'px';
+        const raw = {
+          right: window.innerWidth - ev.clientX - (BTN - dragOffset.x),
+          bottom: window.innerHeight - ev.clientY - (BTN - dragOffset.y)
+        };
+        const c = clamp(raw.right, raw.bottom);
+        host.style.right = c.right + 'px';
+        host.style.bottom = c.bottom + 'px';
       }
     };
     const onUp = () => {
@@ -266,6 +277,12 @@
     };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
+  });
+
+  window.addEventListener('resize', () => {
+    const c = clamp(parseInt(host.style.right), parseInt(host.style.bottom));
+    host.style.right = c.right + 'px';
+    host.style.bottom = c.bottom + 'px';
   });
 
   /* ── Listen for toggle from toolbar click ── */
