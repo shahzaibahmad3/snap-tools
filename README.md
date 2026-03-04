@@ -2,6 +2,14 @@
 
 A Chrome extension that adds a floating circular menu to every webpage with quick-access tools for screen capture, recording, URL sharing, and more.
 
+## Screenshots
+
+<p align="center">
+  <img src="screenshots/menu.png" alt="Radial menu expanded" width="380" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="screenshots/tooltip.png" alt="Tooltip on hover" width="380" />
+</p>
+
 ## Features
 
 | Tool | What it does |
