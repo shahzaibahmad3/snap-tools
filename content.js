@@ -2,7 +2,8 @@
   /* ── If already injected, toggle visibility ── */
   const existingHost = document.getElementById('snap-tools-host');
   if (existingHost) {
-    existingHost.style.display = existingHost.style.display === 'none' ? 'block' : 'none';
+    const vis = existingHost.style.getPropertyValue('display') === 'none' ? 'block' : 'none';
+    existingHost.style.setProperty('display', vis, 'important');
     return;
   }
 
@@ -248,8 +249,11 @@
     const onMove = (ev) => {
       if (Math.hypot(ev.clientX - dragStart.x, ev.clientY - dragStart.y) > 5) {
         isDragging = true;
-        host.style.right = Math.max(0, window.innerWidth - ev.clientX - (host.offsetWidth - dragOffset.x)) + 'px';
-        host.style.bottom = Math.max(0, window.innerHeight - ev.clientY - (host.offsetHeight - dragOffset.y)) + 'px';
+        const w = host.offsetWidth, h = host.offsetHeight;
+        const r = Math.min(Math.max(0, window.innerWidth - ev.clientX - (w - dragOffset.x)), window.innerWidth - w);
+        const b = Math.min(Math.max(0, window.innerHeight - ev.clientY - (h - dragOffset.y)), window.innerHeight - h);
+        host.style.right = r + 'px';
+        host.style.bottom = b + 'px';
       }
     };
     const onUp = () => {
@@ -274,8 +278,11 @@
 
   /* ═══════ Actions ═══════ */
 
+  function showHost() { host.style.setProperty('display', 'block', 'important'); }
+  function hideHost() { host.style.setProperty('display', 'none', 'important'); }
+
   function hideAndWaitRepaint() {
-    host.style.display = 'none';
+    hideHost();
     return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
   }
 
@@ -283,7 +290,7 @@
     closeMenu();
     await hideAndWaitRepaint();
     chrome.runtime.sendMessage({ action: 'capture-visible-tab' }, async (resp) => {
-      host.style.display = 'block';
+      showHost();
       if (chrome.runtime.lastError || resp?.error || !resp?.dataUrl) return toast('Capture failed', true);
       try {
         const r = await fetch(resp.dataUrl);
@@ -300,7 +307,7 @@
     closeMenu();
     await hideAndWaitRepaint();
     chrome.runtime.sendMessage({ action: 'capture-visible-tab' }, (resp) => {
-      host.style.display = 'block';
+      showHost();
       if (chrome.runtime.lastError || resp?.error || !resp?.dataUrl) return toast('Capture failed', true);
       const a = document.createElement('a');
       a.href = resp.dataUrl;
@@ -313,7 +320,7 @@
   /* ── Area Capture ── */
   function startAreaCapture() {
     closeMenu();
-    host.style.display = 'none';
+    hideHost();
 
     const ov = document.createElement('div');
     Object.assign(ov.style, { position:'fixed', top:'0', left:'0', width:'100vw', height:'100vh', zIndex:'2147483647', cursor:'crosshair', background:'rgba(0,0,0,0.18)' });
@@ -342,17 +349,17 @@
       const x = Math.min(e.clientX, sx), y = Math.min(e.clientY, sy);
       const w = Math.abs(e.clientX - sx), h = Math.abs(e.clientY - sy);
       cleanup();
-      if (w < 5 || h < 5) { host.style.display = 'block'; return; }
+      if (w < 5 || h < 5) { showHost(); return; }
       const dpr = window.devicePixelRatio || 1;
       const crop = { x: x*dpr, y: y*dpr, w: w*dpr, h: h*dpr };
       chrome.runtime.sendMessage({ action: 'capture-visible-tab', crop: true }, (resp) => {
-        if (chrome.runtime.lastError || resp?.error) { host.style.display = 'block'; return toast('Capture failed', true); }
-        cropAndCopy(resp.dataUrl, crop).then(() => { host.style.display = 'block'; toast('Area screenshot copied!'); });
+        if (chrome.runtime.lastError || resp?.error) { showHost(); return toast('Capture failed', true); }
+        cropAndCopy(resp.dataUrl, crop).then(() => { showHost(); toast('Area screenshot copied!'); });
       });
     });
 
     function cleanup() { ov.remove(); if (box) box.remove(); if (dim) dim.remove(); }
-    const onEsc = (e) => { if (e.key === 'Escape') { cleanup(); host.style.display = 'block'; document.removeEventListener('keydown', onEsc); } };
+    const onEsc = (e) => { if (e.key === 'Escape') { cleanup(); showHost(); document.removeEventListener('keydown', onEsc); } };
     document.addEventListener('keydown', onEsc);
   }
 
